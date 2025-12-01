@@ -1,6 +1,7 @@
 mod args;
 mod days;
 mod lines;
+mod num;
 
 /**
  * Usage: cargo run DAY PART < INPUT_FILE
