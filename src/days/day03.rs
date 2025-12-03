@@ -11,11 +11,12 @@ fn max_digit(line: &str) -> (usize, u8) {
         }
     }
     if DEBUG_OUTPUT {
-        println!("    pos: {pos}, max_digit: {max_digit}");
+        println!("    pos: {pos}, max_digit: {max_digit} ({line})");
     }
     return (pos, max_digit);
 }
 
+// Highest joltage for 2 batteries in bank
 fn highest_joltage(line: &str) -> u8 {
     if DEBUG_OUTPUT {
         println!("Line: {line}");
@@ -28,6 +29,40 @@ fn highest_joltage(line: &str) -> u8 {
     return (digit1 * 10) + digit2;
 }
 
+// Highest joltage for 12 batteries in bank
+fn highest_joltage_12(line: &str) -> u64 {
+    let mut digits = vec![];
+    let mut digit_pos = 0;
+    if DEBUG_OUTPUT {
+        println!("Line: {line} {:}", line.len());
+    }
+    for step in 0..12 {
+        let remaining_digits = 11 - digits.len();
+        if DEBUG_OUTPUT {
+            println!("    step {step}: {digit_pos} -- {}", &line[digit_pos..]);
+            // println!("    use {step}: {}", &line[digit_pos..]);
+        }
+        let (offset, digit) = max_digit(&line[digit_pos..line.len() - remaining_digits]);
+        if DEBUG_OUTPUT {
+            println!("    digit at {offset}: {digit}");
+        }
+        digits.push(digit);
+        digit_pos = digit_pos + offset + 1;
+    }
+
+    if DEBUG_OUTPUT {
+        println!("    Joltage: {:?}", digits);
+    }
+    let mut joltage = 0;
+    let mut exp = 0;
+    while digits.len() > 0 {
+        let digit = digits.pop().unwrap();
+        joltage += 10u64.pow(exp) * u64::from(digit);
+        exp += 1;
+    }
+    return joltage;
+}
+
 pub fn part1(lines: Vec<String>) {
     let num_lines = lines.len();
     if DEBUG_OUTPUT {
@@ -36,6 +71,18 @@ pub fn part1(lines: Vec<String>) {
     let mut total_joltage: u32 = 0;
     for line in lines {
         total_joltage += u32::from(highest_joltage(&line));
+    }
+    println!("Total joltage: {total_joltage}");
+}
+
+pub fn part2(lines: Vec<String>) {
+    let num_lines = lines.len();
+    if DEBUG_OUTPUT {
+        println!("{num_lines} line(s)");
+    }
+    let mut total_joltage = 0;
+    for line in lines {
+        total_joltage += highest_joltage_12(&line);
     }
     println!("Total joltage: {total_joltage}");
 }
@@ -53,5 +100,10 @@ mod tests {
         assert_eq!(highest_joltage("9999"), 99);
         assert_eq!(highest_joltage("212121"), 22);
         assert_eq!(highest_joltage("97423391"), 99);
+    }
+
+    #[test]
+    fn test_highest_joltage12() {
+        assert_eq!(highest_joltage_12("234234234234278"), 434234234278);
     }
 }
