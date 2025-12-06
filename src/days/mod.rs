@@ -26,8 +26,8 @@ pub fn run(day: u8, part: u8) {
         (4, 1) => day04::part1(lines),
         (4, 2) => day04::part2(lines),
         (5, 1) => day05::part1(lines),
-/*
         (5, 2) => day05::part2(lines),
+/*
         (6, 1) => day06::part1(lines),
         (6, 2) => day06::part2(lines),
         (7, 1) => day07::part1(lines),
