@@ -8,7 +8,7 @@ pub fn read_line() -> (usize, String) {
     if num_bytes == 0 {
         line = "".to_string();
     } else {
-        line = line.trim().to_string();
+        line = line.trim_end_matches('\n').to_string();
     }
     return (num_bytes, line);
 }
