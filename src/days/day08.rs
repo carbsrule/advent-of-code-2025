@@ -13,6 +13,7 @@ impl fmt::Debug for Point {
     }
 }
 
+#[derive(Clone)]
 struct PointDistance {
     p1: Point,
     p2: Point,
@@ -180,6 +181,43 @@ pub fn part1(lines: Vec<String>) {
     }
 
     println!("Product: {product}");
+}
+
+fn junction_in_circuit(junction_box: &Point, circuits: &Vec<Vec<Point>>) -> bool {
+    for circuit in circuits {
+        if circuit.contains(&junction_box) {
+            return true;
+        }
+    }
+    return false;
+}
+
+pub fn part2(lines: Vec<String>) {
+    let junction_boxes = load_points(lines);
+    // println!("Points loaded: {:?}", junction_boxes);
+
+    let mut circuits: Vec<Vec<Point>> = vec![];
+    let distances = shortest_distances(junction_boxes.clone());
+
+    for dist in distances {
+        let last_boxes = dist.clone();
+        reassign(dist, &mut circuits);
+
+        let mut all_assigned = true;
+        for i in 0..junction_boxes.len() {
+            if !junction_in_circuit(&junction_boxes[i], &circuits) {
+                all_assigned = false;
+                break;
+            }
+        }
+        if all_assigned {
+            println!(
+                "Distance of final junction boxes: {}",
+                last_boxes.p1.x * last_boxes.p2.x
+            );
+            break;
+        }
+    }
 }
 
 #[cfg(test)]
