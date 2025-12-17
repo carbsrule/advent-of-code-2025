@@ -1,4 +1,8 @@
-const DEBUG_OUTPUT: bool = false;
+use std::io;
+use std::io::Write;
+use std::time::Instant;
+
+const DEBUG_OUTPUT: bool = true;
 
 #[derive(PartialEq, Clone)]
 struct Tile {
@@ -54,16 +58,57 @@ fn tile_area2(tile1: &Tile, tile2: &Tile, map: &Map) -> usize {
         (tile1.col, tile2.col)
     };
 
+    // Quickly check incrementing distance by 1/2 (and 1/4, 1/8, ...)
+    // If this fails then no need to do a laborious run through of every tile
+    let mut checked = vec![];
+    let mut factor = 2;
+    while factor < 1024 {
+        let col_increment = (end_col + start_col) / factor;
+        let row_increment = (end_row + start_row) / factor;
+        if col_increment < 3 || row_increment < 3 {
+            break;
+        }
+        print!(" 1/{factor}");
+        flush();
+        let mut row = start_row + row_increment;
+        while row <= end_row {
+            let mut col = start_col + col_increment;
+            while col <= end_col {
+                let tile = Tile { row, col };
+                if checked.contains(&tile) {
+                    col += col_increment;
+                    continue;
+                }
+                if map[tile.row][tile.col] == TileColour::Other {
+                    print!(
+                        " quick invalid (factor {factor}) at ({}, {})",
+                        tile.row, tile.col
+                    );
+                    return 0;
+                }
+                checked.push(tile);
+                col += col_increment;
+            }
+            row += row_increment;
+        }
+        factor *= 2;
+    }
+    print!(" out");
+    flush();
+
     for row in start_row..=end_row {
         for col in start_col..=end_col {
             if map[row][col] == TileColour::Other {
+                print!(" invalid at ({row}, {col})");
                 return 0;
             }
         }
     }
     let height = end_row - start_row + 1;
     let width = end_col - start_col + 1;
-    return height * width;
+    let area = height * width;
+    print!(" {area}");
+    return area;
 }
 
 pub fn part1(lines: Vec<String>) {
@@ -100,6 +145,7 @@ enum Scanning {
 type Map = Vec<Vec<TileColour>>;
 
 // draw the map as per the puzzle definition
+#[allow(dead_code)]
 fn draw_map(map: &Map) {
     for row in 0..map.len() {
         for col in 0..map[row].len() {
@@ -111,6 +157,10 @@ fn draw_map(map: &Map) {
         }
         println!();
     }
+}
+
+fn flush() {
+    io::stdout().flush().expect("Err on flush");
 }
 
 fn line_fill(tile1: &Tile, tile2: &Tile, map: &mut Map) {
@@ -138,6 +188,9 @@ fn read_map2(lines: Vec<String>) -> (Map, Vec<Tile>) {
     let red_tiles = read_map(lines);
     println!("Loaded red tiles: {}", red_tiles.len());
 
+    print!("Calculating initial dimensions...");
+    flush();
+
     let mut height = 0;
     let mut width = 0;
     for i in 0..red_tiles.len() {
@@ -153,8 +206,10 @@ fn read_map2(lines: Vec<String>) -> (Map, Vec<Tile>) {
     height += 1;
     width += 1;
 
-    println!("Calculated initial dimensions: {width}x{height}");
+    println!(" {width}x{height}");
 
+    print!("Placing initial tiles in grid...");
+    flush();
     let mut map = vec![];
     for row in 0..=height {
         map.push(vec![]);
@@ -162,8 +217,9 @@ fn read_map2(lines: Vec<String>) -> (Map, Vec<Tile>) {
             map[row].push(TileColour::Other);
         }
     }
-    println!("Placed initial tiles in grid");
+    println!(" done");
 
+    println!("Filling lines");
     for i in 0..red_tiles.len() {
         let tile = &red_tiles[i];
         map[tile.row][tile.col] = TileColour::Red;
@@ -212,37 +268,67 @@ fn fill_map(map: &mut Map) {
 }
 
 pub fn part2(lines: Vec<String>) {
+    let start = Instant::now();
     let (mut map, red_tiles) = read_map2(lines);
-    if DEBUG_OUTPUT {
-        draw_map(&map);
-        println!();
-    }
+    println!("Time so far: {:?}", start.elapsed());
+    // if DEBUG_OUTPUT {
+    //     draw_map(&map);
+    //     println!();
+    // }
 
     print!("Filling map...");
+    flush();
     fill_map(&mut map);
-    println!(" done");
-    if DEBUG_OUTPUT {
-        draw_map(&map);
-        println!();
-    }
+    println!(" done (time so far: {:?})", start.elapsed());
+    // if DEBUG_OUTPUT {
+    //     draw_map(&map);
+    //     println!();
+    // }
 
+    let mut rectangles = vec![];
+
+    print!("Calculating possible sizes... ");
+    flush();
     let mut max_area = 0;
     for i in 0..red_tiles.len() {
         for j in i + 1..red_tiles.len() {
             let tile1 = &red_tiles[i];
             let tile2 = &red_tiles[j];
-            // print!(
-            //     "Checking tiles {i} ({}, {}) and {j} ({}, {}) ... ",
-            //     tile1.row, tile1.col, tile2.row, tile2.col,
-            // );
-            let area = tile_area2(tile1, tile2, &map);
-            // print!("{area}");
-            if area > max_area {
-                max_area = area;
-                // print!(" !");
-            }
-            // println!();
+            let area = tile_area(tile1, tile2);
+            rectangles.push((tile1, tile2, area));
+        }
+    }
+    println!(" done (time so far: {:?})", start.elapsed());
+
+    print!("Sorting possible sizes...");
+    flush();
+    rectangles.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+    rectangles.reverse();
+    println!(" done (time so far: {:?})", start.elapsed());
+
+    println!("Checking {} rectangles", rectangles.len());
+    let mut rectangles_checked = 0;
+    for (tile1, tile2, possible_area) in rectangles {
+        print!(
+            "Checking tiles ({}, {}) and ({}, {}) with area: {possible_area} ...",
+            tile1.row, tile1.col, tile2.row, tile2.col,
+        );
+        flush();
+        let area = tile_area2(tile1, tile2, &map);
+        if area > max_area {
+            max_area = area;
+            println!(" !");
+            break;
+        }
+        println!();
+        rectangles_checked += 1;
+        if rectangles_checked % 1000 == 0 {
+            println!(
+                "{rectangles_checked} rectangles checked in {:?}",
+                start.elapsed()
+            );
         }
     }
     println!("Max area: {max_area}");
+    println!("Total time: {:?}", start.elapsed());
 }
