@@ -10,6 +10,7 @@ mod day07;
 mod day08;
 mod day09;
 mod day10;
+mod day11;
 
 pub fn run(day: u8, part: u8) {
     let mut lines: Vec<String> = Vec::new();
@@ -42,8 +43,8 @@ pub fn run(day: u8, part: u8) {
         (9, 2) => day09::part2(lines),
         (10, 1) => day10::part1(lines),
         (10, 2) => day10::part2(lines),
-/*
         (11, 1) => day11::part1(lines),
+/*
         (11, 2) => day11::part2(lines),
         (12, 1) => day12::part1(lines),
 */
