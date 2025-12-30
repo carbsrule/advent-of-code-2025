@@ -44,8 +44,8 @@ pub fn run(day: u8, part: u8) {
         (10, 1) => day10::part1(lines),
         (10, 2) => day10::part2(lines),
         (11, 1) => day11::part1(lines),
-/*
         (11, 2) => day11::part2(lines),
+/*
         (12, 1) => day12::part1(lines),
 */
         _ => println!("Implementation not available"),
