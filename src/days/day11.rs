@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_solve2() {
-        let mut devices = DeviceMap::from([(
+        let devices = DeviceMap::from([(
             "fft".to_string(),
             Device {
                 name: "fft".to_string(),
